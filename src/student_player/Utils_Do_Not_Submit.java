@@ -10,7 +10,7 @@ public class Utils_Do_Not_Submit {
 	public static void main(String args[]) {
 		String file = "logs/outcomes.txt";
 		int[] list = new int[2];
-		
+		int first= 0;
 		try {
 			Scanner f = new Scanner(new File(file));
 			int i = 0;
@@ -24,8 +24,12 @@ public class Utils_Do_Not_Submit {
 				}else {
 					throw new IllegalArgumentException("unexpected winner");
 				}
+				if(ln[1].equals(ln[4])) {
+					first++;
+				}
 				System.out.println(ln[4]);
 			}
+			System.out.println((double)first / i);
 			System.out.println((double)list[1] / i);
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
