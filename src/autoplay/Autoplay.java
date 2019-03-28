@@ -21,6 +21,8 @@ import java.io.IOException;
 //
 public class Autoplay {
     public static void main(String args[]) {
+    	String player1 = "student_player.StudentPlayer";
+    	String player2 = "student_player.StudentPlayer_V0";
         int n_games;
         try {
             n_games = Integer.parseInt(args[0]);
@@ -32,7 +34,11 @@ public class Autoplay {
                     "First argument to Autoplay must be a positive int " + "giving the number of games to play.");
             return;
         }
-
+        System.out.println(args.length);
+        if(args.length >= 3) {
+        	player1 = args[1];
+        	player2 = args[2];
+        }
         try {
             ProcessBuilder server_pb = new ProcessBuilder("java", "-cp", "bin", "boardgame.Server", "-ng", "-k");
             server_pb.redirectOutput(ProcessBuilder.Redirect.INHERIT);
@@ -40,11 +46,11 @@ public class Autoplay {
             Process server = server_pb.start();
 
             ProcessBuilder client1_pb = new ProcessBuilder("java", "-cp", "bin", "-Xms520m", "-Xmx520m",
-                    "boardgame.Client", "student_player.StudentPlayer");
+                    "boardgame.Client", player1);
             client1_pb.redirectOutput(ProcessBuilder.Redirect.INHERIT);
 
             ProcessBuilder client2_pb = new ProcessBuilder("java", "-cp", "bin", "-Xms520m", "-Xmx520m",
-                    "boardgame.Client", "student_player.StudentPlayer_V0");
+                    "boardgame.Client", player2);
             client2_pb.redirectOutput(ProcessBuilder.Redirect.INHERIT);
 
             for (int i = 0; i < n_games; i++) {
