@@ -9,7 +9,9 @@ import java.util.Random;
 import boardgame.Board;
 import boardgame.Move;
 import pentago_swap.PentagoBoardState;
+import pentago_swap.PentagoCoord;
 import pentago_swap.PentagoMove;
+import pentago_swap.PentagoBoardState.Quadrant;
 
 public class MonteCarlo {
 	public static volatile boolean shouldRun;
@@ -74,6 +76,7 @@ public class MonteCarlo {
         //System.out.println(i);
         Node bestNode = Collections.max(root.getChildren(),
 				Comparator.comparing(n -> (double)n.win/n.visited));
+       // System.out.println("win ratio: "+(double)bestNode.win/bestNode.visited);
         return bestNode.getMove();
     }
     
@@ -127,6 +130,41 @@ public class MonteCarlo {
     		node.win+=reward;
     		node = node.parent;
     	}
+    }
+    
+    public static PentagoMove checkThirdTurnEndGameCrisis(PentagoBoardState boardState, int player_id) {
+    	int[] xs = new int[3];
+    	int[] ys = new int[3];
+    	int k =0;
+    	for(int i = 0; i < PentagoBoardState.BOARD_SIZE; i++) {
+    		for(int j = 0; j < PentagoBoardState.BOARD_SIZE; j++) {
+    			if(boardState.getPieceAt(i, j) == PentagoBoardState.Piece.WHITE) {
+    				xs[k] = i;
+    				ys[k] = j;
+    				k++;
+    			}
+    		}
+    	}
+    	for(int i = 0; i < 2; i++) {
+    		for(int j = i+1; j < 3; j++) {
+    			if(Math.abs(xs[i]-xs[j]) == 1||Math.abs(ys[i]-ys[j]) == 1) {
+    		    	int x = 0;
+    		    	int y = 0;
+    				if(i==0 && j == 2) {
+    					x = xs[1] + xs[j]-xs[i];
+    					y = ys[1] + ys[j]-ys[i];
+    				}else if(i==0 && j == 1) {
+    					x = xs[2] + xs[j]-xs[i];
+    					y = ys[2] + ys[j]-ys[i];
+    				}else {
+    					x = xs[0] + xs[j]-xs[i];
+    					y = ys[0] + ys[j]-ys[i];
+    				}
+    				return new PentagoMove(x, y, Quadrant.BL, Quadrant.BR, player_id);
+    			}
+    		}
+    	}
+    	return null;
     }
         
 }
