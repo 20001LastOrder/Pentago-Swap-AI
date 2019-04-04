@@ -77,7 +77,7 @@ public class MonteCarlo_Improved {
 		//exploreTakeout(root.getChildren(), player_id);
 		long timeForTake = System.currentTimeMillis() - time;
 		long t = System.currentTimeMillis();
-		long end = t + 1900-timeForTake;
+		long end = t + 1000-timeForTake;
 		int i = 0;
 		while (System.currentTimeMillis() < end) {
 			i++;
