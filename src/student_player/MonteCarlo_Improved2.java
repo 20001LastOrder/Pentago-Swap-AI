@@ -79,7 +79,7 @@ public class MonteCarlo_Improved2 {
 		long timeForTake = System.currentTimeMillis() - time;
 		//System.out.println(timeForTake);
 		long t = System.currentTimeMillis();
-		long end = t + 1800-timeForTake;
+		long end = t + 1700-timeForTake;
 		int i = 0;
 		while (System.currentTimeMillis() < end) {
 			i++;
