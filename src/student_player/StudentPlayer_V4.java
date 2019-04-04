@@ -1,23 +1,26 @@
 package student_player;
 
-import boardgame.Move;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.util.Hashtable;
+import java.util.Scanner;
 
-import pentago_swap.PentagoPlayer;
-import pentago_swap.PentagoBoardState.Quadrant;
+import boardgame.Move;
 import pentago_swap.PentagoBoardState;
 import pentago_swap.PentagoCoord;
 import pentago_swap.PentagoMove;
+import pentago_swap.PentagoPlayer;
+import pentago_swap.PentagoBoardState.Quadrant;
+import student_player.Utils_Do_Not_Submit.Data;
 
-/** A player file submitted by a student. */
-public class StudentPlayer_V3 extends PentagoPlayer {
-
+public class StudentPlayer_V4 extends PentagoPlayer{
     /**
      * You must modify this constructor to return your student number. This is
      * important, because this is what the code that runs the competition uses to
      * associate you with your agent. The constructor should do nothing else.
      */
-    public StudentPlayer_V3() {
-        super("V3");
+    public StudentPlayer_V4() {
+        super("V4");
     }
 
     /**
@@ -46,7 +49,13 @@ public class StudentPlayer_V3 extends PentagoPlayer {
     		}
     		return myMove;
     	}
-    	Move myMove = MonteCarlo.random(boardState, player_id);
+    	Move myMove = null;
+    	try {
+        	myMove = MonteCarlo_Improved.random(boardState, player_id);
+    	} catch (Exception e) {
+			e.printStackTrace();
+		}
+    	
         // Return your move to be processed by the server.
         return myMove;
     }

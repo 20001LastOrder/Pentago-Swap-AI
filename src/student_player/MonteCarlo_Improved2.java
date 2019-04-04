@@ -14,16 +14,15 @@ import boardgame.Board;
 import boardgame.Move;
 import pentago_swap.PentagoBoardState;
 import pentago_swap.PentagoMove;
-import student_player.MonteCarlo_Improved2.Node;
 
-public class MonteCarlo_Improved {
+public class MonteCarlo_Improved2 {
 	private static Hashtable<String, Data> map = new Hashtable<String, Data>();
 	private static Node winningNode;
 	static class Data {
 		int win;
 		int total;
 	}
-
+	private static int draws = 0;
 	static class Node {
 		private PentagoBoardState state; // state of the board
 		private PentagoMove move; // move to take parent to this state
@@ -65,6 +64,7 @@ public class MonteCarlo_Improved {
 
 	public static Move random(PentagoBoardState boardState, int player_id) {
 		//set winning node to null
+		draws = 0;
 		winningNode = null;
 		Node root = new Node(boardState, null, null);
 		expand(root);
@@ -74,8 +74,10 @@ public class MonteCarlo_Improved {
 		if(winningNode != null) {
 			return winningNode.move;
 		}
-		//exploreTakeout(root.getChildren(), player_id);
+		
+		
 		long timeForTake = System.currentTimeMillis() - time;
+		//System.out.println(timeForTake);
 		long t = System.currentTimeMillis();
 		long end = t + 1900-timeForTake;
 		int i = 0;
@@ -84,8 +86,8 @@ public class MonteCarlo_Improved {
 			Node node = decentWithUCT(root);
 			rollout(node, player_id);
 		}
-		System.out.println(root.getChildren().size());
 		System.out.println("iteration: " + i);
+		System.out.println("Draws: "+ draws);
 		Node bestNode = Collections.max(root.getChildren(), Comparator.comparing(n -> (double) n.win / n.visited));
 		
 		
@@ -95,11 +97,11 @@ public class MonteCarlo_Improved {
 			bestNode = winningNode;
 		}
 		
-		System.out.println("win ratio: "+(double)bestNode.win/bestNode.visited);
+		//System.out.println("win ratio: "+(double)bestNode.win/bestNode.visited);
 		//System.out.println(root.getChildren().size());
 		return bestNode.getMove();
 	}
-	
+
 	private static double computeUCT(Node node) {
 		if (node.visited == 0) {
 			return Integer.MAX_VALUE;
@@ -142,8 +144,8 @@ public class MonteCarlo_Improved {
 
 		int i = 0;
 		while (state.getWinner() == Board.NOBODY) {
-			//Move move = state.getAllLegalMoves().get(r.nextInt(state.getAllLegalMoves().size()));
-			Move move = state.getAllLegalMoves().get(0);
+			Move move = state.getAllLegalMoves().get(r.nextInt(state.getAllLegalMoves().size()));
+			//Move move = state.getAllLegalMoves().get(0);
 
 			state.processMove((PentagoMove) move);
 			i++;
@@ -153,11 +155,12 @@ public class MonteCarlo_Improved {
 		int reward = -1;
 		if (winner == player_id) {
 			reward = 32-2*node.state.getTurnNumber()-i;
-		} else if (winner == Board.DRAW) {
+		} else if (winner == Board.DRAW) { 
+			draws++;
 			reward = 1;
 		}else {
-			reward = 0;
-			if(i <= 1) {
+			reward = -i;
+			if(i <= 3) {
 				if(node.parent.children.size() >= 2) {
 					System.out.println("Size : " + node.parent.children.size());
 					node.parent.children.remove(node);
@@ -175,13 +178,14 @@ public class MonteCarlo_Improved {
 
 	private static void takeout(List<Node> nodes, int player_id) {
 		for(int i = 0; i < nodes.size(); i++) {
-			if(nodes.get(i).state.getWinner() == player_id || nodes.get(i).state.getWinner()==Board.DRAW) {
+			if(nodes.get(i).state.getWinner() == player_id) {
 				winningNode = nodes.get(i);
 			};
 			List<PentagoMove> moves = nodes.get(i).state.getAllLegalMoves();
 			for(PentagoMove move : moves) {
 				PentagoBoardState state = (PentagoBoardState)nodes.get(i).getState().clone();
 				state.processMove(move);
+				nodes.get(i).children.add(new Node(state, move, nodes.get(i)));
 				if(state.getWinner()!=Board.NOBODY && state.getWinner() != player_id && state.getWinner()!= Board.DRAW) {
 					if(nodes.size() > 1) {
 						nodes.remove(nodes.get(i));
@@ -194,34 +198,6 @@ public class MonteCarlo_Improved {
 			}
 		}
 	}
-	
-	public static void exploreTakeout(List<Node> nodes, int player_id) {
-		for(int i = 0; i < nodes.size(); i++) {
-			PentagoBoardState state = (PentagoBoardState) nodes.get(i).getState().clone();
-			Random r = new Random();
-
-			while (state.getWinner() == Board.NOBODY) {
-				Move move = state.getAllLegalMoves().get(r.nextInt(state.getAllLegalMoves().size()));
-				//Move move = state.getAllLegalMoves().get(0);
-
-				state.processMove((PentagoMove) move);
-			}
-			
-			if(state.getWinner() != player_id && state.getWinner()!= Board.DRAW) {
-//				if(nodes.size() > 1) {
-//					nodes.remove(nodes.get(i));
-//					i--;
-//					System.out.println("LEFT: "+ nodes.size());
-//				}
-				nodes.get(i).visited=1000;
-				nodes.get(i).win = 0;
-			}else {
-				nodes.get(i).visited=1000;
-				nodes.get(i).win=1000;
-			}
-		}
-	}
-	
 	
 	public static String encodeState(PentagoBoardState boardState) {
 		String TL = "";

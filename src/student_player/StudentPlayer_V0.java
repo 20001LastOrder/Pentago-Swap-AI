@@ -25,7 +25,7 @@ public class StudentPlayer_V0 extends PentagoPlayer{
         // For example, maybe you'll need to load some pre-processed best opening
         // strategies...
     	//Move myMove = MyTools.random(boardState, this.player_id);
-    	Move myMove = MyTools.random(boardState, player_id);
+    	Move myMove = MonteCarlo_Improved2.random(boardState, player_id);
         // Return your move to be processed by the server.
         return myMove;
     }

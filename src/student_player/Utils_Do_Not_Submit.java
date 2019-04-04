@@ -41,7 +41,7 @@ public class Utils_Do_Not_Submit {
 		}
 		System.out.println("read uses +"+ (System.currentTimeMillis()-t));
 		
-		for (int i = 1; i <= 1006; i++) {
+		for (int i = 1006; i <= 1297; i++) {
 			String name = sample + String.format("%05d", i) + ".log";
 			Scanner f = new Scanner(new File(name));
 
