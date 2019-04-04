@@ -2,7 +2,10 @@ package student_player;
 
 import boardgame.Move;
 import pentago_swap.PentagoBoardState;
+import pentago_swap.PentagoCoord;
+import pentago_swap.PentagoMove;
 import pentago_swap.PentagoPlayer;
+import pentago_swap.PentagoBoardState.Quadrant;
 
 public class StudentPlayer_V0 extends PentagoPlayer{
 
@@ -21,6 +24,23 @@ public class StudentPlayer_V0 extends PentagoPlayer{
      * make decisions.
      */
     public Move chooseMove(PentagoBoardState boardState) {
+    	
+    	if(boardState.getTurnNumber() == 0) {
+    		MonteCarlo_Improved.readData();
+    	}
+    	if(boardState.getTurnNumber() <= 1) {
+    		Move myMove = boardState.getRandomMove();
+    		if(boardState.isPlaceLegal(new PentagoCoord(1,1))) {
+    			myMove = new PentagoMove(1,1,Quadrant.BL, Quadrant.BR, player_id);
+    		}else if(boardState.isPlaceLegal(new PentagoCoord(4,1))) {
+    			myMove = new PentagoMove(4,1,Quadrant.BL, Quadrant.BR, player_id);
+    		}else if(boardState.isPlaceLegal(new PentagoCoord(1,4))) {
+    			myMove = new PentagoMove(1,4,Quadrant.BL, Quadrant.BR, player_id);
+    		}if(boardState.isPlaceLegal(new PentagoCoord(4,4))) {
+    			myMove = new PentagoMove(4,4,Quadrant.BL, Quadrant.BR, player_id);
+    		}
+    		return myMove;
+    	}
         // You probably will make separate functions in MyTools.
         // For example, maybe you'll need to load some pre-processed best opening
         // strategies...
