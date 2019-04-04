@@ -86,8 +86,6 @@ public class MonteCarlo_Improved2 {
 			Node node = decentWithUCT(root);
 			rollout(node, player_id);
 		}
-		System.out.println("iteration: " + i);
-		System.out.println("Draws: "+ draws);
 		Node bestNode = Collections.max(root.getChildren(), Comparator.comparing(n -> (double) n.win / n.visited));
 		
 		
@@ -162,7 +160,7 @@ public class MonteCarlo_Improved2 {
 			reward = -i;
 			if(i <= 3) {
 				if(node.parent.children.size() >= 2) {
-					System.out.println("Size : " + node.parent.children.size());
+//					System.out.println("Size : " + node.parent.children.size());
 					node.parent.children.remove(node);
 					node.parent = null;
 				}

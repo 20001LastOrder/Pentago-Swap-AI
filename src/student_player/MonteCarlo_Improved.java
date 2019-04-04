@@ -84,8 +84,8 @@ public class MonteCarlo_Improved {
 			Node node = decentWithUCT(root);
 			rollout(node, player_id);
 		}
-		System.out.println(root.getChildren().size());
-		System.out.println("iteration: " + i);
+//		System.out.println(root.getChildren().size());
+//		System.out.println("iteration: " + i);
 		Node bestNode = Collections.max(root.getChildren(), Comparator.comparing(n -> (double) n.win / n.visited));
 		
 		
@@ -95,7 +95,7 @@ public class MonteCarlo_Improved {
 			bestNode = winningNode;
 		}
 		
-		System.out.println("win ratio: "+(double)bestNode.win/bestNode.visited);
+//		System.out.println("win ratio: "+(double)bestNode.win/bestNode.visited);
 		//System.out.println(root.getChildren().size());
 		return bestNode.getMove();
 	}
