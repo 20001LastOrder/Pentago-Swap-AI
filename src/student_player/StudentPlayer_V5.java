@@ -7,14 +7,14 @@ import pentago_swap.PentagoCoord;
 import pentago_swap.PentagoMove;
 import pentago_swap.PentagoPlayer;
 
-public class StudentPlayer_V2 extends PentagoPlayer{
+public class StudentPlayer_V5 extends PentagoPlayer{
     /**
      * You must modify this constructor to return your student number. This is
      * important, because this is what the code that runs the competition uses to
      * associate you with your agent. The constructor should do nothing else.
      */
-    public StudentPlayer_V2() {
-        super("V2");
+    public StudentPlayer_V5() {
+        super("V5");
     }
 
     /**
@@ -41,15 +41,9 @@ public class StudentPlayer_V2 extends PentagoPlayer{
     		}
     		return myMove;
     	}
+
     	
-//    	if(boardState.getTurnNumber() == 2 && player_id != PentagoBoardState.WHITE) {
-//    		Move myMove = MonteCarlo.checkThirdTurnEndGameCrisis(boardState, player_id);
-//    		if(myMove != null && boardState.isLegal((PentagoMove)myMove)) {
-//    			return myMove;
-//    		}
-//    	}
-    	
-    	Move myMove = MonteCarlo.random(boardState, player_id);
+    	Move myMove = Minimax.minimax(boardState, player_id);
         // Return your move to be processed by the server.
         return myMove;
     }

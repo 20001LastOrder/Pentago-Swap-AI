@@ -30,9 +30,6 @@ public class StudentPlayer_V3 extends PentagoPlayer {
         // For example, maybe you'll need to load some pre-processed best opening
         // strategies...
     	//Move myMove = MyTools.random(boardState, this.player_id);
-    	if(boardState.getTurnNumber() == 0) {
-    		MonteCarlo_Improved.readData();
-    	}
     	if(boardState.getTurnNumber() <= 1) {
     		Move myMove = boardState.getRandomMove();
     		if(boardState.isPlaceLegal(new PentagoCoord(1,1))) {

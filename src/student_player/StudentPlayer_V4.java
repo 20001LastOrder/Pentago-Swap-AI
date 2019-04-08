@@ -33,9 +33,11 @@ public class StudentPlayer_V4 extends PentagoPlayer{
         // For example, maybe you'll need to load some pre-processed best opening
         // strategies...
     	//Move myMove = MyTools.random(boardState, this.player_id);
-    	if(boardState.getTurnNumber() == 0) {
-    		MonteCarlo_Improved.readData();
-    	}
+    	
+    	//init
+    		MonteCarlo_Improved.init(boardState, player_id);
+    	
+    	
     	if(boardState.getTurnNumber() <= 1) {
     		Move myMove = boardState.getRandomMove();
     		if(boardState.isPlaceLegal(new PentagoCoord(1,1))) {
@@ -51,7 +53,7 @@ public class StudentPlayer_V4 extends PentagoPlayer{
     	}
     	Move myMove = null;
     	try {
-        	myMove = MonteCarlo_Improved.random(boardState, player_id);
+        	myMove = MonteCarlo_Improved.random(boardState);
     	} catch (Exception e) {
 			e.printStackTrace();
 		}

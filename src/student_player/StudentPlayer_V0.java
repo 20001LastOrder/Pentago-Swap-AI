@@ -25,9 +25,6 @@ public class StudentPlayer_V0 extends PentagoPlayer{
      */
     public Move chooseMove(PentagoBoardState boardState) {
     	
-    	if(boardState.getTurnNumber() == 0) {
-    		MonteCarlo_Improved.readData();
-    	}
     	if(boardState.getTurnNumber() <= 1) {
     		Move myMove = boardState.getRandomMove();
     		if(boardState.isPlaceLegal(new PentagoCoord(1,1))) {

@@ -7,20 +7,13 @@ import boardgame.Move;
 
 import pentago_swap.PentagoPlayer;
 import pentago_swap.PentagoBoardState.Piece;
-import student_player.MyTools.Node;
 import pentago_swap.PentagoBoardState;
 import pentago_swap.PentagoCoord;
 import pentago_swap.PentagoMove;
 
 
 
-/*public class MyTools {
-    public static double getSomething() {
-        return Math.random();
-    }
-}
-*/
-public class MyTools extends StudentPlayer_F{
+public class alphabeta extends StudentPlayer_F{
 	private Piece[][] board = new Piece[6][6];
 	private static final UnaryOperator<PentagoCoord> getNextHorizontal = c -> new PentagoCoord(c.getX(), c.getY()+1);
     private static final UnaryOperator<PentagoCoord> getNextVertical = c -> new PentagoCoord(c.getX()+1, c.getY());
@@ -37,18 +30,24 @@ public class MyTools extends StudentPlayer_F{
 		//PentagoMove bestMove = null;
 		
 		//my player is maximizing; while the opponent player is minimizing 
-
+		
 		
 		if(!moves.isEmpty() && depth!=0) {
 
 			for(PentagoMove move: moves) {
+				//System.out.println(move.toPrettyString());
 				PentagoBoardState newClone= (PentagoBoardState) cloneState.clone();
 				newClone.processMove(move); //will the cloneState change every time
 				if (player==AI) {//maximizing
-			
+					//System.out.println("op"+newClone.getOpponent());
+					//System.out.println("myplayer"+player);
 					score=minimax(depth-1,opp,alpha, beta, newClone).getScore();
+					//System.out.println(score);
+					//System.out.println("alpha = "+alpha);
 					if(score > alpha) {
 						alpha = score;
+						//System.out.println("alpha = "+alpha);
+						//System.out.println(move.toPrettyString());
 						bestMove.setMove(move);
 					}
 				}
@@ -57,16 +56,19 @@ public class MyTools extends StudentPlayer_F{
 					if(score<beta) {
 						beta=score;
 						bestMove.setMove(move);
+						//System.out.println("beta = "+beta);
 					}
 				}
 				if(alpha>=beta) break;
 			}
 			if(player== AI) {
 				Node rs = new Node(bestMove.getMove(),alpha);
+				//rs.getMove().toPrettyString();
 				return rs;
 			}
 			else {
 				Node rs = new Node(bestMove.getMove(),beta);
+				//rs.getMove().toPrettyString();
 				return rs;
 			}
 			
@@ -75,7 +77,14 @@ public class MyTools extends StudentPlayer_F{
 		else{		//when depth=0
 			
 			score= heuristic(AI,cloneState)-heuristic(opp,cloneState);		//pass in game state
+			//score= heuristic(AI,cloneState);
 			bestMove.setScore(score);
+			//System.out.println("ai score = "+heuristic(AI,cloneState));
+			//System.out.println("opp score = "+heuristic(opp,cloneState));
+			//System.out.println("score = "+score);
+			//System.out.println(bestMove.getScore());
+			
+			
 			return bestMove;
 			
 		}
@@ -88,26 +97,33 @@ public class MyTools extends StudentPlayer_F{
     		PentagoCoord startX =new PentagoCoord(0,0);
     		//check vertical both diagonal
     		for(int i=0;i<6;i++) {
+    			//System.out.println("Checking Column " + i);
     			int Situation2= checkSituation(player, startY, getNextVertical,state);
+   			//System.out.println("Column " + i + ":"+ Situation2);
     			accumScore = Situation2+ accumScore;
     			if(i<2) {
     				int Situation3= checkSituation(player, startY, getNextDiagRight,state);
         			accumScore = Situation3+ accumScore;
+        			//System.out.println("Diagonal " + i + ":"+  Situation3);
     			}
     			if(i>3) {
     				int Situation4= checkSituation(player, startY, getNextDiagLeft,state);
         			accumScore = Situation4+ accumScore;
+        			//System.out.println("Diagonal " + i + ":"+ Situation4);
     			}
     			if(i!=5) {
     				startY=  getNextHorizontal.apply(startY);
     			}
     		}
     		for(int i=0;i<6;i++) {
+    			//System.out.println("Checking Column " + i);
     			int Situation5= checkSituation(player,startX, getNextHorizontal,state);
     			accumScore = Situation5 + accumScore;
+    			//System.out.println("Checking Column " + i + ":"+Situation5);
     			if(i==1) {
     				int Situation6= checkSituation(player,startX,getNextDiagRight,state);
     				accumScore= accumScore+Situation6;
+    				//System.out.println("Checking Column " + i + ":"+Situation6);
     			}
     			if(i!=5) {
     				startX= getNextVertical.apply(startX);
@@ -115,6 +131,7 @@ public class MyTools extends StudentPlayer_F{
     		}
     		PentagoCoord specialCheck= new PentagoCoord(1,5);
     		int specialCase= checkSituation(player,specialCheck,getNextDiagLeft,state);
+    		//System.out.println("Special " + ":"+ specialCase);
     		accumScore=accumScore+specialCase;
     		return accumScore;
     }
@@ -197,6 +214,7 @@ public class MyTools extends StudentPlayer_F{
     			}
     			else if (this.board[current.getX()][current.getY()] == Piece.EMPTY) {
     				partialScore=partialScore+ scoreTable(sameColor,emptySide);
+    				//System.out.println("Streak : " + sameColor + " " + "EmptydSide" + emptySide );
     				sameColor=0;
     				previous=0;
     				blockSide=0;

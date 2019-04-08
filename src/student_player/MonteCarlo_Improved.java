@@ -1,29 +1,32 @@
 package student_player;
 
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Hashtable;
 import java.util.List;
 import java.util.Random;
-import java.util.Scanner;
+import java.util.function.UnaryOperator;
 
 import boardgame.Board;
 import boardgame.Move;
 import pentago_swap.PentagoBoardState;
+import pentago_swap.PentagoBoardState.Piece;
+import pentago_swap.PentagoCoord;
 import pentago_swap.PentagoMove;
-import student_player.MonteCarlo_Improved2.Node;
 
 public class MonteCarlo_Improved {
-	private static Hashtable<String, Data> map = new Hashtable<String, Data>();
 	private static Node winningNode;
-	static class Data {
-		int win;
-		int total;
-	}
+	private static int player_id;
+	private static Piece player_piece; 
+	private static Piece other_piece; 
 
+	private static final UnaryOperator<PentagoCoord> getNextHorizontal = c -> new PentagoCoord(c.getX(), c.getY()+1);
+    private static final UnaryOperator<PentagoCoord> getNextVertical = c -> new PentagoCoord(c.getX()+1, c.getY());
+    private static final UnaryOperator<PentagoCoord> getNextDiagRight = c -> new PentagoCoord(c.getX()+1, c.getY()+1);
+    private static final UnaryOperator<PentagoCoord> getNextDiagLeft = c -> new PentagoCoord(c.getX()+1, c.getY()-1);
+    
+    
+    
 	static class Node {
 		private PentagoBoardState state; // state of the board
 		private PentagoMove move; // move to take parent to this state
@@ -63,18 +66,29 @@ public class MonteCarlo_Improved {
 
 	}
 
-	public static Move random(PentagoBoardState boardState, int player_id) {
+	public static void init(PentagoBoardState boardState, int player_id) {
+		MonteCarlo_Improved.player_id = player_id;
+		if(boardState.firstPlayer() == player_id) {
+			player_piece = Piece.WHITE;
+			other_piece = Piece.BLACK;
+		}else {
+			player_piece = Piece.BLACK;
+			other_piece = Piece.WHITE;
+		}
+	}
+	
+	public static Move random(PentagoBoardState boardState) {
+
 		//set winning node to null
 		winningNode = null;
 		Node root = new Node(boardState, null, null);
 		expand(root);
-		
 		long time = System.currentTimeMillis();
-		takeout(root.getChildren(),player_id);
+		takeout(root.getChildren());
 		if(winningNode != null) {
 			return winningNode.move;
 		}
-		//exploreTakeout(root.getChildren(), player_id);
+
 		long timeForTake = System.currentTimeMillis() - time;
 		long t = System.currentTimeMillis();
 		long end = t + 1000-timeForTake;
@@ -82,7 +96,7 @@ public class MonteCarlo_Improved {
 		while (System.currentTimeMillis() < end) {
 			i++;
 			Node node = decentWithUCT(root);
-			rollout(node, player_id);
+			rollout(node);
 		}
 //		System.out.println(root.getChildren().size());
 //		System.out.println("iteration: " + i);
@@ -121,24 +135,12 @@ public class MonteCarlo_Improved {
 			PentagoBoardState state = (PentagoBoardState) node.getState().clone();
 			state.processMove(m);
 			Node child = new Node(state, m, node);
-//			Data data = map.get(encodeState(state));
-//			if (data != null) {
-//				int win = 0;
-//				if (player_id == 0) {
-//					win = data.win*100;
-//				} else {
-//					win = data.total*100 - data.win*100;
-//				}
-//				child.win = win*100;
-//				child.visited = data.total*100;
-//			}
 			node.getChildren().add(child);
 		});
 	}
 
-	private static void rollout(Node node, int player_id) {
+	private static void rollout(Node node) {
 		PentagoBoardState state = (PentagoBoardState) node.getState().clone();
-		Random r = new Random();
 
 		int i = 0;
 		while (state.getWinner() == Board.NOBODY) {
@@ -156,10 +158,10 @@ public class MonteCarlo_Improved {
 		} else if (winner == Board.DRAW) {
 			reward = 1;
 		}else {
-			reward = 0;
+			reward = -(32-2*node.state.getTurnNumber()-i);
 			if(i <= 1) {
 				if(node.parent.children.size() >= 2) {
-					System.out.println("Size : " + node.parent.children.size());
+					System.out.println("sad");
 					node.parent.children.remove(node);
 					node.parent = null;
 				}
@@ -173,137 +175,101 @@ public class MonteCarlo_Improved {
 		}
 	}
 
-	private static void takeout(List<Node> nodes, int player_id) {
+	private static void takeout(List<Node> nodes) {	
+		System.out.println(nodes.size());
+		System.out.println(player_id);
 		for(int i = 0; i < nodes.size(); i++) {
+			boolean promising = false;
 			if(nodes.get(i).state.getWinner() == player_id || nodes.get(i).state.getWinner()==Board.DRAW) {
 				winningNode = nodes.get(i);
-			};
+				return;
+			}else if(nodes.get(i).state.getWinner() == 1-player_id) {
+				nodes.get(i).state.printBoard();
+
+				if(nodes.size() > 1) {
+					nodes.remove(nodes.get(i));
+					i--;
+					continue;
+				}else {
+					return;
+				}
+			}
+			
+			if(checkEndGameCrisis(nodes.get(i).state, player_piece)) {
+				promising = true;
+			}
+			
 			List<PentagoMove> moves = nodes.get(i).state.getAllLegalMoves();
 			for(PentagoMove move : moves) {
 				PentagoBoardState state = (PentagoBoardState)nodes.get(i).getState().clone();
 				state.processMove(move);
-				if(state.getWinner()!=Board.NOBODY && state.getWinner() != player_id && state.getWinner()!= Board.DRAW) {
-					if(nodes.size() > 1) {
+
+				if(state.getWinner()==1- player_id || 
+				   checkEndGameCrisis(state, other_piece)) {
+					state.printBoard();
+					System.out.println(checkEndGameCrisis(state, other_piece));
+					if(nodes.size() > 3) {
 						nodes.remove(nodes.get(i));
 					}else {
 						return;
 					}
 					i--;
+					promising = false;
 					break;
 				}
 			}
-		}
-	}
-	
-	public static void exploreTakeout(List<Node> nodes, int player_id) {
-		for(int i = 0; i < nodes.size(); i++) {
-			PentagoBoardState state = (PentagoBoardState) nodes.get(i).getState().clone();
-			Random r = new Random();
-
-			while (state.getWinner() == Board.NOBODY) {
-				Move move = state.getAllLegalMoves().get(r.nextInt(state.getAllLegalMoves().size()));
-				//Move move = state.getAllLegalMoves().get(0);
-
-				state.processMove((PentagoMove) move);
-			}
-			
-			if(state.getWinner() != player_id && state.getWinner()!= Board.DRAW) {
-//				if(nodes.size() > 1) {
-//					nodes.remove(nodes.get(i));
-//					i--;
-//					System.out.println("LEFT: "+ nodes.size());
-//				}
-				nodes.get(i).visited=1000;
-				nodes.get(i).win = 0;
-			}else {
-				nodes.get(i).visited=1000;
-				nodes.get(i).win=1000;
+			if(promising) {
+				winningNode = nodes.get(i);
 			}
 		}
 	}
 	
-	
-	public static String encodeState(PentagoBoardState boardState) {
-		String TL = "";
-		String TR = "";
-		String BL = "";
-		String BR = "";
+	private static boolean checkEndGameCrisis(PentagoBoardState state, Piece piece) {
+		
+		PentagoCoord tl = new PentagoCoord(0,0);
+		PentagoCoord br = new PentagoCoord(0,5);
 
-		// TL
-		for (int i = 0; i <= 2; i++) {
-			for (int j = 0; j <= 2; j++) {
-				if (boardState.getPieceAt(i, j) == PentagoBoardState.Piece.WHITE) {
-					TL += '0';
-				} else if (boardState.getPieceAt(i, j) == PentagoBoardState.Piece.BLACK) {
-					TL += '1';
-				} else {
-					TL += 'N';
-				}
+		//check two diagonals
+		if(checkCrisisPattern(getNextDiagRight, state, piece, tl) 
+					|| checkCrisisPattern(getNextDiagLeft, state, piece, br)) {
+			return true;
+		}
+		
+		//check all horizontal
+		for(int i = 0; i < 5; i++) {
+			if(checkCrisisPattern(getNextHorizontal, state, piece, new PentagoCoord(i,0))) {
+				return true;
 			}
 		}
-
-		// TR
-		for (int i = 3; i <= 5; i++) {
-			for (int j = 0; j <= 2; j++) {
-				if (boardState.getPieceAt(i, j) == PentagoBoardState.Piece.WHITE) {
-					TR += '0';
-				} else if (boardState.getPieceAt(i, j) == PentagoBoardState.Piece.BLACK) {
-					TR += '1';
-				} else {
-					TR += 'N';
-				}
+		
+		//check all verticals
+		for(int i = 0; i < 5; i++) {
+			if(checkCrisisPattern(getNextVertical, state, piece, new PentagoCoord(0,i))) {
+				return true;
 			}
 		}
-
-		// BL
-		for (int i = 0; i <= 2; i++) {
-			for (int j = 3; j <= 5; j++) {
-				if (boardState.getPieceAt(i, j) == PentagoBoardState.Piece.WHITE) {
-					BL += '0';
-				} else if (boardState.getPieceAt(i, j) == PentagoBoardState.Piece.BLACK) {
-					BL += '1';
-				} else {
-					BL += 'N';
-				}
-			}
-		}
-
-		// BR
-		for (int i = 3; i <= 5; i++) {
-			for (int j = 3; j <= 5; j++) {
-				if (boardState.getPieceAt(i, j) == PentagoBoardState.Piece.WHITE) {
-					BR += '0';
-				} else if (boardState.getPieceAt(i, j) == PentagoBoardState.Piece.BLACK) {
-					BR += '1';
-				} else {
-					BR += 'N';
-				}
-			}
-		}
-		return TL + TR + BL + BR;
+		
+		return false;
 	}
-
-	public static void readData() {
-		String file = "data/table.txt";
-
-		// read old table
-		Scanner s;
-		try {
-			s = new Scanner(new File(file));
-			// long t = System.currentTimeMillis();
-			while (s.hasNextLine()) {
-				String[] line = s.nextLine().split("\\s+");
-				int win = Integer.parseInt(line[1]);
-				int total = Integer.parseInt(line[2]);
-				Data data = new Data();
-				data.win = win;
-				data.total = total;
-				map.put(line[0], data);
+	
+	//check if the board has four successive pattern of the same color
+	//eg: _****_
+	private static boolean checkCrisisPattern(UnaryOperator<PentagoCoord> operator, PentagoBoardState state, 
+										Piece piece, PentagoCoord coor) {
+//		if(state.getPieceAt(coor) != piece && state.getPieceAt(coor) != Piece.EMPTY) {
+//			return false;
+//		}
+		for(int i = 0; i < 4; i++) {
+			coor = operator.apply(coor);
+			if(state.getPieceAt(coor) != piece) {
+				return false;
 			}
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
 		}
-
+		coor = operator.apply(coor);
+		if(state.getPieceAt(coor) == Piece.EMPTY) {
+			return true;
+		}
+		return false;
+		
 	}
 }
