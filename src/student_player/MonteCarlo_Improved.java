@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Random;
 import java.util.function.UnaryOperator;
 
 import boardgame.Board;
@@ -204,10 +203,7 @@ public class MonteCarlo_Improved {
 				PentagoBoardState state = (PentagoBoardState)nodes.get(i).getState().clone();
 				state.processMove(move);
 
-				if(state.getWinner()==1- player_id || 
-				   checkEndGameCrisis(state, other_piece)) {
-					state.printBoard();
-					System.out.println(checkEndGameCrisis(state, other_piece));
+				if(state.getWinner()==1- player_id) {
 					if(nodes.size() > 3) {
 						nodes.remove(nodes.get(i));
 					}else {
@@ -216,6 +212,16 @@ public class MonteCarlo_Improved {
 					i--;
 					promising = false;
 					break;
+				}else if(checkEndGameCrisis(state, other_piece)) {
+					if(!promising) {
+						if(nodes.size() > 3) {
+							nodes.remove(nodes.get(i));
+						}else {
+							return;
+						}
+						i--;
+						break;
+					}
 				}
 			}
 			if(promising) {
