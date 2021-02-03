@@ -21,8 +21,8 @@ import java.io.IOException;
 //
 public class Autoplay {
     public static void main(String args[]) {
-    	String player1 = "student_player.StudentPlayer";
-    	String player2 = "student_player.StudentPlayer_V0";
+    	String player1 = "student_player.StudentPlayer_V4";
+    	String player2 = "student_player.StudentPlayer_i2";
         int n_games;
         try {
             n_games = Integer.parseInt(args[0]);

@@ -3,6 +3,7 @@ package pentago_swap;
 import boardgame.Board;
 import boardgame.BoardState;
 import boardgame.Move;
+import pentago_swap.PentagoBoardState.Piece;
 
 import java.util.ArrayList;
 import java.util.HashMap;

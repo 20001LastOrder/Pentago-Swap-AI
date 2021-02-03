@@ -1,260 +1,371 @@
 package student_player;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Random;
 import java.util.function.UnaryOperator;
 
+import boardgame.Board;
 import boardgame.Move;
-
-import pentago_swap.PentagoPlayer;
-import pentago_swap.PentagoBoardState.Piece;
-import student_player.MyTools.Node;
 import pentago_swap.PentagoBoardState;
+import pentago_swap.PentagoBoardState.Piece;
 import pentago_swap.PentagoCoord;
 import pentago_swap.PentagoMove;
 
+public class MyTools {
+	
+	//Node for indicating the potential winning node
+	private static Node winningNode;
+	private static int player_id;
+	private static Piece player_piece; 
+	private static Piece other_piece; 
 
-
-/*public class MyTools {
-    public static double getSomething() {
-        return Math.random();
-    }
-}
-*/
-public class MyTools extends StudentPlayer_F{
-	private Piece[][] board = new Piece[6][6];
+	//Unary Operators for coordinates
 	private static final UnaryOperator<PentagoCoord> getNextHorizontal = c -> new PentagoCoord(c.getX(), c.getY()+1);
     private static final UnaryOperator<PentagoCoord> getNextVertical = c -> new PentagoCoord(c.getX()+1, c.getY());
     private static final UnaryOperator<PentagoCoord> getNextDiagRight = c -> new PentagoCoord(c.getX()+1, c.getY()+1);
     private static final UnaryOperator<PentagoCoord> getNextDiagLeft = c -> new PentagoCoord(c.getX()+1, c.getY()-1);
     
+    //Random used for random simulation in later stage
+    private static final Random r = new Random();
     
-	public Node minimax(int depth, int player, int alpha, int beta, PentagoBoardState boardState) {
-		updateBoard(boardState);
-		PentagoBoardState cloneState = (PentagoBoardState) boardState.clone();
-		ArrayList<PentagoMove> moves = cloneState.getAllLegalMoves();
+    // turns that we begin real Monte Carlo simulation
+    private static final int MONTE_CARLO_START=10;
+    
+    
+    /**
+     * Node class used for monte carlo step 
+     *
+     */
+	static class Node {
+		private PentagoBoardState state; // state of the board
+		private PentagoMove move; // move to take parent to this state
+
+		private Node parent;
+		private List<Node> children; // subsequent states
+		int visited;
+		int win;
 		int score;
-		Node bestMove = new Node(); 
-		//PentagoMove bestMove = null;
-		
-		//my player is maximizing; while the opponent player is minimizing 
 
-		
-		if(!moves.isEmpty() && depth!=0) {
+		public Node(PentagoBoardState state, PentagoMove move, Node parent) {
+			super();
+			this.state = state;
+			this.move = move;
+			this.parent = parent;
+			this.children = new ArrayList<Node>();
+		}
 
-			for(PentagoMove move: moves) {
-				PentagoBoardState newClone= (PentagoBoardState) cloneState.clone();
-				newClone.processMove(move); //will the cloneState change every time
-				if (player==AI) {//maximizing
-			
-					score=minimax(depth-1,opp,alpha, beta, newClone).getScore();
-					if(score > alpha) {
-						alpha = score;
-						bestMove.setMove(move);
-					}
-				}
-				else { //opponent 
-					score=minimax(depth-1,AI,alpha,beta,newClone).getScore();
-					if(score<beta) {
-						beta=score;
-						bestMove.setMove(move);
-					}
-				}
-				if(alpha>=beta) break;
-			}
-			if(player== AI) {
-				Node rs = new Node(bestMove.getMove(),alpha);
-				return rs;
-			}
-			else {
-				Node rs = new Node(bestMove.getMove(),beta);
-				return rs;
-			}
-			
-		
+		public PentagoBoardState getState() {
+			return state;
 		}
-		else{		//when depth=0
-			
-			score= heuristic(AI,cloneState)-heuristic(opp,cloneState);		//pass in game state
-			bestMove.setScore(score);
-			return bestMove;
-			
-		}
-		}
-	
-	//calculate the heuristic for both player
-    public int heuristic(int player, PentagoBoardState state) {
-    		int accumScore=0;
-    		PentagoCoord startY =new PentagoCoord(0,0);
-    		PentagoCoord startX =new PentagoCoord(0,0);
-    		//check vertical both diagonal
-    		for(int i=0;i<6;i++) {
-    			int Situation2= checkSituation(player, startY, getNextVertical,state);
-    			accumScore = Situation2+ accumScore;
-    			if(i<2) {
-    				int Situation3= checkSituation(player, startY, getNextDiagRight,state);
-        			accumScore = Situation3+ accumScore;
-    			}
-    			if(i>3) {
-    				int Situation4= checkSituation(player, startY, getNextDiagLeft,state);
-        			accumScore = Situation4+ accumScore;
-    			}
-    			if(i!=5) {
-    				startY=  getNextHorizontal.apply(startY);
-    			}
-    		}
-    		for(int i=0;i<6;i++) {
-    			int Situation5= checkSituation(player,startX, getNextHorizontal,state);
-    			accumScore = Situation5 + accumScore;
-    			if(i==1) {
-    				int Situation6= checkSituation(player,startX,getNextDiagRight,state);
-    				accumScore= accumScore+Situation6;
-    			}
-    			if(i!=5) {
-    				startX= getNextVertical.apply(startX);
-    			}
-    		}
-    		PentagoCoord specialCheck= new PentagoCoord(1,5);
-    		int specialCase= checkSituation(player,specialCheck,getNextDiagLeft,state);
-    		accumScore=accumScore+specialCase;
-    		return accumScore;
-    }
-    
-    public void updateBoard(PentagoBoardState bs) {
-		for(int i=0;i<6;i++) {
-			for(int j=0;j<6;j++) {
-				board[i][j] = bs.getPieceAt(i,j);
-			}
-		}
-	}
-    
-  //set the heuristic value for each situation
-    public int scoreTable (int number, int emptySide) {
-    		if(number >=5) {
-    			return 300000;
-    		}
-    		else if(number ==4) {
-    			if(emptySide==2) return 300000;
-    			if(emptySide==1) return 3000;
-    			else return 2600;
-    			
-    		}
-    		else if(number ==3) {
-    			if(emptySide==2) return 3000;
-    			if(emptySide==1) return 800;
-    			else return 500;
-    			
-    		}
-    		else if(number ==2) {
-    			if(emptySide==2) return 650;
-    			if(emptySide==1) return 150;
-    			
-    			
-    		}
-    		else if(number ==1) {
-    			if(emptySide==2) return 100;
-    			
-    		}
-    		return 0;
-    }
-    
-    private int checkSituation(int player, PentagoCoord board, UnaryOperator<PentagoCoord> direction, PentagoBoardState state){
-		int[] result = new int[2];
-		int sameColor=0;
-		int previous = 0;
-		int blockSide=0;
-		int partialScore=0;
-		updateBoard(state);
-		int emptySide= 2-blockSide;
-		result[0] = sameColor;
-		result[1] = emptySide;
-		PentagoCoord current= board;
-		Piece color = player==0 ? Piece.WHITE : Piece.BLACK;
-		Piece oppColor = player==0 ? Piece.BLACK : Piece.WHITE;
-		
-		while(true) {
-			try {
-    			if(color== this.board[current.getX()][current.getY()]) {
-    				if(previous==0) sameColor++;
-    				if(previous==1) {
-    					sameColor++;
-    					blockSide++;
-    					emptySide= 2-blockSide;
-    				}
-    				if(direction!=getNextHorizontal) {
-    					if(current.getX()==0 || current.getX()==5) {
-        					blockSide++;
-        					emptySide= 2-blockSide;
-        				}
-    				}
-    				if(direction!=getNextVertical) {
-    					if(current.getY()==0 || current.getY()==5) {
-        					blockSide++;
-        					emptySide= 2-blockSide;
-    					}
-    				}
-    				previous=0;
-    				current= direction.apply(current);
-    			}
-    			else if (this.board[current.getX()][current.getY()] == Piece.EMPTY) {
-    				partialScore=partialScore+ scoreTable(sameColor,emptySide);
-    				sameColor=0;
-    				previous=0;
-    				blockSide=0;
-    				emptySide= 2-blockSide;
-    				current= direction.apply(current);
-    			}
-    			else if (oppColor == this.board[current.getX()][current.getY()]){
-    				blockSide++;
-    				emptySide= 2-blockSide;
-    				partialScore=partialScore+ scoreTable(sameColor,emptySide);
-    				sameColor=0;
-    				blockSide=0;
-    				emptySide= 2-blockSide;
-    				previous=1;
-    				current= direction.apply(current);
-    			}
-    			else break;
 
-    		}catch(IllegalArgumentException e) {
-    			partialScore= partialScore+scoreTable(sameColor,emptySide);
-    			break;
-    		}
-		} 		
-		
-		
-		return partialScore;
-}
-	
-	
-	public class Node{
-		PentagoMove move;
-		int heuristic;
-		
-		public Node() {
+		public PentagoMove getMove() {
+			return move;
+		}
+
+		public Node getParent() {
+			return parent;
+		}
+
+		public List<Node> getChildren() {
+			return children;
 		}
 		
-		public Node(PentagoMove move, int heuristic) {
-			this.move=move;
-			this.heuristic = heuristic;
+		public void setScore(int score) {
+			this.score = score;
 		}
 		
-		public Node(int heuristic) {
-			this.heuristic=heuristic;
-		}
-		public PentagoMove getMove()
-		{
-			return this.move;
-		}
 		public int getScore() {
-			return this.heuristic;
+			return score;
 		}
-		public void setScore(int heuristic) {
-			this.heuristic=heuristic;
+		
+
+		public Node selectRandomChild() {
+			return children.get((int) (Math.random() * children.size()));
 		}
-		public void setMove(PentagoMove move) {
-			this.move=move;
+
+	}
+
+	/**
+	 * initiate game
+	 * @param boardState: the board State
+	 * @param player_id: the id for the AI player
+	 */
+	public static void init(PentagoBoardState boardState, int player_id) {
+		MyTools.player_id = player_id;
+		if(boardState.firstPlayer() == player_id) {
+			player_piece = Piece.WHITE;
+			other_piece = Piece.BLACK;
+		}else {
+			player_piece = Piece.BLACK;
+			other_piece = Piece.WHITE;
+		}
+	}
+	
+	/**
+	 * Main method, choose a promising move
+	 * @param boardState: current board state
+	 * @return the move we choose
+	 */
+	public static Move chooseMove(PentagoBoardState boardState) {
+
+		//set winning node to null
+		winningNode = null;
+		
+		//create one-step children for the roots
+		Node root = new Node(boardState, null, null);
+		expand(root);
+
+		//take out the extremely bad moves
+		takeout(root.getChildren());
+		
+		//if there is any good moves found in the takeout stage, use it
+		if(winningNode != null) {
+			return winningNode.move;
+		}
+
+		//set timer for the simulation
+		PentagoTimer timer = new PentagoTimer(1500);
+		if(boardState.getTurnNumber() <= MONTE_CARLO_START) {
+			// if the game is within certain range, use fake monte-carlo
+			while (!timer.timeout) {
+				Node node = decentWithUCT(root);
+				rollout(node, boardState.getTurnNumber());
+			}
+		}else {
+			//else use real monte-carlo
+			while(!timer.timeout) {
+				Node node = decentWithUCT(root);
+				if(!node.getState().gameOver()) {
+					if(node.getChildren().size() == 0) {
+						expand(node);
+					}
+					Node nodeToGo = node.selectRandomChild();
+					rollout(nodeToGo, player_id);
+	    		}else {
+	    			rollout(node, player_id);
+	    		}
+			}			
+		}
+
+
+		//get the best move from the children
+		Node bestNode = Collections.max(root.getChildren(), Comparator.comparing(n -> (double) n.win / n.visited));
+		
+		
+		
+		// if there is a winning node use it
+		if(winningNode != null) {
+			bestNode = winningNode;
+		}
+		
+		return bestNode.getMove();
+	}
+	
+	/**
+	 * Compute the UCT value
+	 * @param node
+	 * @return: UCT value of that node
+	 */
+	private static double computeUCT(Node node) {
+		if (node.visited == 0) {
+			return Integer.MAX_VALUE;
+		}
+
+		return node.win / node.visited + Math.sqrt(2 * Math.log(node.getParent().visited) / node.visited);
+
+	}
+
+	/**
+	 * find the promising node based on the UCT value
+	 * @param node
+	 * @return
+	 */
+	private static Node decentWithUCT(Node node) {
+		while (node.getChildren().size() > 0) {
+			node = Collections.max(node.getChildren(), Comparator.comparing(n -> computeUCT(n)));
+		}		
+		return node;
+	}
+
+	/**
+	 * expand a node by its legal moves
+	 * @param node
+	 */
+	private static void expand(Node node) {
+		node.getState().getAllLegalMoves().forEach(m -> {
+			PentagoBoardState state = (PentagoBoardState) node.getState().clone();
+			state.processMove(m);
+			Node child = new Node(state, m, node);
+			node.getChildren().add(child);
+		});
+	}
+
+	/**
+	 * do simulation on a node to the end of the game based on some rule
+	 * @param node
+	 * @param turnNumber
+	 */
+	private static void rollout(Node node, int turnNumber) {
+		PentagoBoardState state = (PentagoBoardState) node.getState().clone();
+
+		int i = 0;
+		while (state.getWinner() == Board.NOBODY) {
+			Move move;
+			//if within same term, do not use random simulation
+			if(turnNumber <= MONTE_CARLO_START) {
+				move = state.getAllLegalMoves().get(0);
+			}else {
+				move = state.getAllLegalMoves().get(r.nextInt(state.getAllLegalMoves().size()));
+			}
+
+			state.processMove((PentagoMove) move);
+			i++;
+		}
+
+		//assign score based on the winner
+		int winner = state.getWinner();
+		int reward = -1;
+		if (winner == player_id) {
+			reward = (32-2*node.state.getTurnNumber()-i)*1000 + 5000;
+		} else if (winner == Board.DRAW) {
+			reward = 1000;
+		}else {
+			reward = -(32-2*node.state.getTurnNumber()-i) * 1000 - 5000;
+			if(i <= 1) {
+				if(node.parent.children.size() >= 2) {
+					node.parent.children.remove(node);
+					node.parent = null;
+				}
+			}
+		}
+		
+		//back propagate
+		Node tNode = node;
+		while(tNode != null) {
+			tNode.visited++;
+			tNode.win += reward;
+			tNode = tNode.parent;
 		}
 	}
 
+	/**
+	 * take out bad move and look for promisng moves (similar to minimax)
+	 * @param nodes
+	 */
+	private static void takeout(List<Node> nodes) {	
+		for(int i = 0; i < nodes.size(); i++) {
+			boolean promising = false;
+			
+			//check if there is any winner and act accordingly
+			if(nodes.get(i).state.getWinner() == player_id || nodes.get(i).state.getWinner()==Board.DRAW) {
+				//if we can win on next move, just do it
+				winningNode = nodes.get(i);
+				return;
+			}else if(nodes.get(i).state.getWinner() == 1-player_id) {
+				if(nodes.size() > 3) {
+					nodes.remove(nodes.get(i));
+					i--;
+					continue;
+				}else {
+					return;
+				}
+			}
+			
+			//check if there is any promisng pattern for the player
+			if(checkEndGameCrisis(nodes.get(i).state, player_piece)) {
+				promising = true;
+			}
+			
+			//go to depth 2
+			List<PentagoMove> moves = nodes.get(i).state.getAllLegalMoves();
+			for(PentagoMove move : moves) {
+				PentagoBoardState state = (PentagoBoardState)nodes.get(i).getState().clone();
+				state.processMove(move);
+
+				//check if there is any winner or promising pattern for the opponent and act
+				//accordingly
+				if(state.getWinner()==1- player_id) {
+					if(nodes.size() > 1) {
+						nodes.remove(nodes.get(i));
+					}else {
+						return;
+					}
+					i--;
+					promising = false;
+					break;
+				}else if(checkEndGameCrisis(state, other_piece)) {
+					if(!promising) {
+						if(nodes.size() > 3) {
+							nodes.remove(nodes.get(i));
+						}else {
+							return;
+						}
+						i--;
+						break;
+					}
+				}
+			}
+			
+			// if a node is promising, we make it as a winning node
+			if(promising) {
+				winningNode = nodes.get(i);
+			}
+		}
+	}
 	
+	/**
+	 * check for end game crisis of a piece (good for this piece)
+	 * @param state
+	 * @param piece
+	 * @return
+	 */
+	public static boolean checkEndGameCrisis(PentagoBoardState state, Piece piece) {
+		
+		PentagoCoord tl = new PentagoCoord(0,0);
+		PentagoCoord br = new PentagoCoord(0,5);
+
+		//check two diagonals
+		if(checkCrisisPattern(getNextDiagRight, state, piece, tl) 
+					|| checkCrisisPattern(getNextDiagLeft, state, piece, br)) {
+			return true;
+		}
+		
+		//check all horizontal
+		for(int i = 0; i < 5; i++) {
+			if(checkCrisisPattern(getNextHorizontal, state, piece, new PentagoCoord(i,0))) {
+				return true;
+			}
+		}
+		
+		//check all verticals
+		for(int i = 0; i < 5; i++) {
+			if(checkCrisisPattern(getNextVertical, state, piece, new PentagoCoord(0,i))) {
+				return true;
+			}
+		}
+		
+		return false;
+	}
+	
+	//check if the board has four successive pattern of the same color
+	//eg: _****_
+	private static boolean checkCrisisPattern(UnaryOperator<PentagoCoord> operator, PentagoBoardState state, 
+										Piece piece, PentagoCoord coor) {
+
+		for(int i = 0; i < 4; i++) {
+			coor = operator.apply(coor);
+			if(state.getPieceAt(coor) != piece) {
+				return false;
+			}
+		}
+		coor = operator.apply(coor);
+		if(state.getPieceAt(coor) == Piece.EMPTY) {
+			return true;
+		}
+		return false;
+		
+	}
 }

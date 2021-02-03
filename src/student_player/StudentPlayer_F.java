@@ -99,18 +99,8 @@ public class StudentPlayer_F extends PentagoPlayer {
     	ArrayList<PentagoMove> nextMoves = state.getAllLegalMoves();		// 	Create a list of possible moves
     	int score;
     	Node bestMove = new Node();
-    	if(nextMoves.isEmpty() || depth == 0) {
-    		
-    		/*
-    		if(calStateHeuristic(AI) > 100000) {
-    			winningMoveFound = true;
-    			System.out.println("AI have 5");
-    		} 
-    		if(calStateHeuristic(Opp) > 100000) {
-    			System.out.println("Opp have 5");
-    		} */
+    	if(nextMoves.isEmpty() || depth == 0) {	
     		score = calStateHeuristic(AI) - calStateHeuristic(opp);
-    		//System.out.println("Score = " + score);
     		bestMove.setHeuristic(score);
     		return bestMove;
     		
@@ -123,14 +113,12 @@ public class StudentPlayer_F extends PentagoPlayer {
     				
     				if(score > alpha) {
     					alpha = score;
-    					//System.out.println("Alpha = " + alpha);
     					bestMove.setMove(move);
     				}
     			} else {
     				score = minMax(newClonedState, depth - 1, AI, alpha, beta).getHeuristic();
     				if(score < beta) {
     					beta = score;
-    					//System.out.println("Beta = " + beta);
     					bestMove.setMove(move);
     				}
     			}
